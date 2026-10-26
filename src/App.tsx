@@ -29,6 +29,7 @@ function App() {
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [difficulty, setDifficulty] = useState('All')
+  const [topicFilter, setTopicFilter] = useState('All')
   const [code, setCode] = useState(starterCode)
   const [output, setOutput] = useState('Run your code to see output here.')
   const [runState, setRunState] = useState<RunState>('idle')
@@ -66,7 +67,8 @@ function App() {
     const query = searchQuery.toLowerCase()
     return (problem.title.toLowerCase().includes(query) || problem.topics.some((topic) => topic.toLowerCase().includes(query)))
       && (difficulty === 'All' || problem.difficulty === difficulty)
-  }), [searchQuery, difficulty])
+      && (topicFilter === 'All' || problem.topics.includes(topicFilter))
+  }), [searchQuery, difficulty, topicFilter])
 
   const signIn = async () => {
     if (!supabase) {
@@ -215,10 +217,10 @@ function App() {
         ) : view === 'problems' ? (
           <section className="content-page">
             <div className="page-heading"><div><div className="eyebrow">BUILD YOUR FOUNDATION</div><h1>Problem set<span>.</span></h1><p>A deliberate set of problems, one good solution at a time.</p></div><div className="heading-stamp"><Code2 size={16} /> JAVA TRACK</div></div>
-            <div className="problem-summary-row"><div className="mini-stat"><span>Total problems</span><b>{problems.length}</b></div><div className="mini-stat"><span>Solved</span><b>0 <small>/ {problems.length}</small></b></div><div className="mini-stat"><span>Completion</span><b>0%</b></div></div>
+            <div className="problem-summary-row"><div className="mini-stat"><span>Total problems</span><b>{problems.length}</b></div><div className="mini-stat"><span>Topics</span><b>{new Set(problems.flatMap((problem) => problem.topics)).size}</b></div><div className="mini-stat"><span>Completion</span><b>0%</b></div></div>
             <div className="panel table-panel">
-              <div className="table-toolbar"><div className="search-box"><Search size={16} /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search problems or topics..." /></div><div className="filter-controls"><label><ListFilter size={15} /><select value={difficulty} onChange={(event) => setDifficulty(event.target.value)}><option>All</option><option>Easy</option><option>Medium</option><option>Hard</option></select></label><button className="button-secondary compact-button" onClick={() => { setSearchQuery(''); setDifficulty('All') }}><ArrowDownUp size={14} /> Reset</button></div></div>
-              {filteredProblems.length ? <div className="problem-table"><div className="problem-table-head"><span>STATUS</span><span>TITLE</span><span>DIFFICULTY</span><span>TOPICS</span><span /></div>{filteredProblems.map((problem) => <button className="problem-table-row" key={problem.id} onClick={() => openProblem(problem)}><span className="problem-status"><span className="status-empty" /></span><b>{problem.title}</b><span><i className={`difficulty-text ${problem.difficulty.toLowerCase()}`}>{problem.difficulty}</i></span><span className="topic-cell">{problem.topics.slice(0, 2).join(' · ')}</span><ArrowRight size={15} /></button>)}</div> : <div className="empty-problems"><div className="empty-icon"><BookOpen size={22} /></div><h3>Your problem set starts here</h3><p>No problems have been added yet. Send your problem list and we’ll add those exact problems—no extras.</p><button className="button-secondary" onClick={() => setShowAuthNotice(true)}>How to add problems <ArrowRight size={14} /></button></div>}
+              <div className="table-toolbar"><div className="search-box"><Search size={16} /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search problems or topics..." /></div><div className="filter-controls"><label><ListFilter size={15} /><select value={difficulty} onChange={(event) => setDifficulty(event.target.value)}><option>All difficulties</option><option>Easy</option><option>Medium</option><option>Hard</option><option>Unknown</option></select><select aria-label="Filter by topic" value={topicFilter} onChange={(event) => setTopicFilter(event.target.value)}><option value="All">All topics</option>{Array.from(new Set(problems.flatMap((problem) => problem.topics))).sort().map((topic) => <option key={topic} value={topic}>{topic}</option>)}</select></label><button className="button-secondary compact-button" onClick={() => { setSearchQuery(''); setDifficulty('All'); setTopicFilter('All') }}><ArrowDownUp size={14} /> Reset</button></div></div>
+              {filteredProblems.length ? <div className="problem-table"><div className="problem-table-head"><span>STATUS</span><span>TITLE</span><span>DIFFICULTY</span><span>TOPICS</span><span /></div>{filteredProblems.map((problem) => <button className="problem-table-row" key={problem.id} onClick={() => openProblem(problem)}><span className="problem-status"><span className="status-empty" /></span><b>{problem.title}</b><span><i className={`difficulty-text ${problem.difficulty.toLowerCase()}`}>{problem.difficulty}</i>{problem.externalUrl && <a className="problem-external-link" href={problem.externalUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>LeetCode ↗</a>}</span><span className="topic-cell">{problem.topics.slice(0, 2).join(' · ')}</span><ArrowRight size={15} /></button>)}</div> : <div className="empty-problems"><div className="empty-icon"><BookOpen size={22} /></div><h3>No matching problems</h3><p>Try another search or clear the filters to see the full catalogue.</p><button className="button-secondary" onClick={() => setShowAuthNotice(true)}>How to add problems <ArrowRight size={14} /></button></div>}
             </div>
             <div className="footnote"><ShieldCheck size={15} /> Your practice list stays focused on the problems you choose.</div>
           </section>
