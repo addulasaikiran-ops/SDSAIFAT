@@ -9,8 +9,18 @@ A React + TypeScript coding-practice application with a hybrid dashboard and foc
 - Monaco Java editor
 - Google OAuth integration path using Supabase Auth
 - Imported 350-row problem catalogue from the supplied spreadsheet
+- Local auto-saved Java drafts and self-reported problem status/progress tracking
+- Problem filtering by completion status; progress and streak metrics derived from local practice history
 - Judge0 submission and result polling for the Run button
 - Streak calculation helpers (local calendar dates)
+
+## Progress and draft storage
+
+Practice status, code drafts, and manually marked completions are saved in this browser using local storage. They do not sync between devices yet. The spreadsheet provides problem titles and topic categories, but does not include verified difficulty labels, complete problem statements, or test cases; the UI links to the original problem where available and does not claim automated acceptance.
+
+## Cloudflare Workers deployment
+
+The repository includes a Wrangler configuration for the `sdsaifat` Worker. The Cloudflare Worker build should run `npm run build` and then `npx wrangler deploy`. Static assets are served from `dist`, and `/api/*` routes execute in the Worker before the SPA fallback. Set `JUDGE0_API_URL` as a server-side Worker secret. Add `JUDGE0_API_KEY` only if the execution provider requires it.
 
 ## Run locally
 
