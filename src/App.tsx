@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import Editor from '@monaco-editor/react'
 import {
-  Activity, ArrowDownUp, ArrowLeft, ArrowRight, BookOpen, Check,
-  ChevronDown, CircleHelp, Code2, Command, Flame, Gauge, ListFilter,
-  LogOut, Menu, Play, Search, Settings2, ShieldCheck, Sparkles, Terminal,
-  Trophy, X, Zap,
+  Activity, ArrowDownUp, ArrowRight, BookOpen, Check, ChevronDown, CircleHelp, Code2, Command, Flame, Gauge, ListFilter, LogOut, Menu, Search, Settings2, ShieldCheck, Sparkles, Trophy, X, Zap
 } from 'lucide-react'
 import { problems } from './data/problems'
+import WorkspacePage from './components/WorkspacePage'
 import { buildActivityGrid, calculateStreaks } from './lib/streak'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import type { ActivityDay, Problem } from './types'
@@ -78,7 +75,7 @@ export default function App() {
   const [practiceState, setPracticeState] = useState<SavedPracticeState>(readPracticeState)
   const [code, setCode] = useState(starterCode)
   const [stdin, setStdin] = useState('')
-  const [output, setOutput] = useState('Run your code to see output here.')
+  const [output, setOutput] = useState('')
   const [runState, setRunState] = useState<RunState>('idle')
   const [isRunning, setIsRunning] = useState(false)
   const [user, setUser] = useState<{ email?: string; name?: string; avatar?: string } | null>(null)
@@ -158,7 +155,7 @@ export default function App() {
     setSelectedProblem(problem)
     setCode(practiceState.drafts[problem.id] ?? problem.starterCode)
     setStdin(practiceState.stdinByProblem[problem.id] ?? '')
-    setOutput('Run your code to see output here.')
+    setOutput('')
     setView('workspace')
   }
 
@@ -276,11 +273,11 @@ export default function App() {
     if (!selectedProblem) return
     if (!selectedProblem.testCases.length) {
       setOutput('Not submitted for judging: this catalogue entry has no verified test cases yet. Run code to check compilation/output, and add official or reviewed test cases before enabling Accepted/Wrong Answer results.')
-      setRunState('error')
+      setRunState('idle')
       return
     }
     setOutput('Automated multi-test judging is not enabled yet. The test cases need to be wired to the execution service before a submission can receive an accepted verdict.')
-    setRunState('error')
+    setRunState('idle')
   }
 
   const navItems: { id: View; label: string; icon: typeof Gauge }[] = [
@@ -343,50 +340,26 @@ export default function App() {
         </header>
 
         {view === 'workspace' && selectedProblem ? (
-          <section className="workspace-page">
-            <div className="workspace-heading">
-              <button className="back-link" onClick={() => setView('problems')}><ArrowLeft size={15} /> All problems</button>
-              <div className="workspace-title-row"><div><div className="eyebrow">PROBLEM WORKSPACE</div><h1>{selectedProblem.title} <small className="problem-id-label">{selectedProblem.externalId ? "#" + selectedProblem.externalId : "Practice"}</small></h1></div><span className={`difficulty-pill ${selectedProblem.difficulty.toLowerCase()}`}>{selectedProblem.difficulty === "Unknown" ? "Not tagged" : selectedProblem.difficulty}</span></div>
-              <div className="problem-topics">{selectedProblem.topics.map((topic) => <span key={topic}>{topic}</span>)}{selectedProblem.externalUrl && <a href={selectedProblem.externalUrl} target="_blank" rel="noreferrer">Open original problem ↗</a>}</div>
-            </div>
-            <div className="coding-layout">
-              <section className="panel statement-panel">
-                <div className="panel-header"><div className="panel-title"><BookOpen size={16} /><b>Description</b></div><span className="panel-menu">•••</span></div>
-                <div className="statement-content">
-                  <h2>{selectedProblem.title}</h2>
-                  {selectedProblem.statement.includes('not included in the supplied spreadsheet') ? (
-                    <div className="statement-notice">
-                      <div className="notice-kicker"><BookOpen size={15} /> PROBLEM DETAILS NOT INCLUDED</div>
-                      <p>The supplied spreadsheet contains this problem's title and topic, but not the full statement, examples, constraints, or verified test cases.</p>
-                      {selectedProblem.externalUrl
-                        ? <a className="official-problem-link" href={selectedProblem.externalUrl} target="_blank" rel="noreferrer">Open official LeetCode problem <ArrowRight size={14} /></a>
-                        : <p>Use the runnable Java template to practice input, output, and basic Java syntax.</p>}
-                      <p className="notice-footnote">You can run Java code here. Accepted/Wrong Answer judging remains unavailable until verified test cases are added.</p>
-                    </div>
-                  ) : <p>{selectedProblem.statement}</p>}
-                  {selectedProblem.examples.length > 0 && <>
-                    <h3>Examples</h3>
-                    {selectedProblem.examples.map((example, index) => <div className="example-box" key={index}><b>Example {index + 1}</b><code>Input: {example.input}</code><code>Output: {example.output}</code>{example.explanation && <p>{example.explanation}</p>}</div>)}
-                  </>}
-                  {selectedProblem.constraints.length > 0 && <>
-                    <h3>Constraints</h3><ul>{selectedProblem.constraints.map((constraint) => <li key={constraint}><code>{constraint}</code></li>)}</ul>
-                  </>}
-                </div>
-                <div className="statement-footer"><span><BookOpen size={14} /> Problem {selectedProblem.sheetOrder ?? problems.findIndex((p) => p.id === selectedProblem.id) + 1} of {problems.length}</span><span>Java 17</span></div><div className="problem-navigation"><button className="button-secondary" onClick={() => moveProblem(-1)} disabled={problems.findIndex((p) => p.id === selectedProblem.id) <= 0}><ArrowLeft size={14} /> Previous</button><button className="button-secondary" onClick={() => moveProblem(1)} disabled={problems.findIndex((p) => p.id === selectedProblem.id) >= problems.length - 1}>Next problem <ArrowRight size={14} /></button></div>
-              </section>
-              <section className="panel editor-panel">
-                <div className="editor-toolbar"><div className="editor-tab"><span className="java-badge">J</span> Main.java <X size={13} /></div><span className="editor-save-status"><Check size={13} /> Auto-saves locally</span></div>
-                <div className="editor-host"><Editor height="100%" language="java" theme="vs-dark" value={code} onChange={(value) => handleCodeChange(value ?? '')} options={{ minimap: { enabled: false }, fontSize: 13, lineNumbers: 'on', scrollBeyondLastLine: false, automaticLayout: true, tabSize: 4, padding: { top: 18 }, fontFamily: "'JetBrains Mono', monospace" }} /></div>
-                <div className="stdin-panel">
-                  <label htmlFor="custom-stdin"><span>Standard input</span><small>Saved for this problem</small></label>
-                  <textarea id="custom-stdin" value={stdin} onChange={(event) => handleStdinChange(event.target.value)} placeholder="Enter test input here, one value per line…" rows={3} spellCheck={false} />
-                </div>
-                <div className="console-panel"><div className="console-heading"><div><Terminal size={15} /><b>Console</b><span className={`run-indicator ${runState}`} /></div><button className="icon-button" title="Clear console" onClick={() => { setOutput('Run your code to see output here.'); setRunState('idle') }}><X size={15} /></button></div><pre className={`console-output ${runState}`}>{output}</pre></div>
-                <div className="editor-footer"><span className="language-label"><span className="language-dot" /> Java 17</span><div><button className="button-secondary" onClick={resetCurrentCode}>Reset</button><button className="button-secondary mark-solved-button" onClick={() => markProblemSolved(selectedProblem)} disabled={getProblemStatus(selectedProblem.id) === 'Solved'}><Check size={14} /> {getProblemStatus(selectedProblem.id) === 'Solved' ? 'Solved' : 'Mark solved'}</button><button className="button-primary run-button" onClick={runCode} disabled={isRunning}><Play size={14} fill="currentColor" /> {isRunning ? 'Running…' : 'Run code'}</button><button className="button-submit" onClick={submitCode}><Zap size={14} /> Submit</button></div></div>
-              </section>
-            </div>
-          </section>
-        ) : view === 'problems' ? (
+          <WorkspacePage
+            problem={selectedProblem}
+            code={code}
+            stdin={stdin}
+            output={output}
+            runState={runState}
+            isRunning={isRunning}
+            status={getProblemStatus(selectedProblem.id)}
+            onCodeChange={handleCodeChange}
+            onStdinChange={handleStdinChange}
+            onRun={runCode}
+            onSubmit={submitCode}
+            onReset={resetCurrentCode}
+            onMarkSolved={() => markProblemSolved(selectedProblem)}
+            onPrevious={() => moveProblem(-1)}
+            onNext={() => moveProblem(1)}
+            onBack={() => setView('problems')}
+            hasPrevious={problems.findIndex((p) => p.id === selectedProblem.id) > 0}
+            hasNext={problems.findIndex((p) => p.id === selectedProblem.id) < problems.length - 1}
+          ) : view === 'problems' ? (
           <section className="content-page">
             <div className="page-heading"><div><div className="eyebrow">BUILD YOUR FOUNDATION</div><h1>Problem set<span>.</span></h1><p>A deliberate set of problems, one good solution at a time.</p></div><div className="heading-stamp"><Code2 size={16} /> JAVA TRACK</div></div>
             <div className="problem-summary-row"><div className="mini-stat"><span>Total problems</span><b>{problems.length}</b></div><div className="mini-stat"><span>In progress</span><b>{inProgressCount}</b></div><div className="mini-stat"><span>Completion</span><b>{completionPercent}%</b></div></div>
