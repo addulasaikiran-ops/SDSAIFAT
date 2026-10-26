@@ -175,7 +175,9 @@ export default function App() {
         externalId: problem.externalId ?? curatedProblem.externalId,
       }
       setSelectedProblem(selectedData)
-      setCode(savedDraft ?? selectedData.starterCode)
+      setCode((currentCode) => currentCode === (savedDraft ?? problem.starterCode)
+        ? (savedDraft ?? selectedData.starterCode)
+        : currentCode)
     }).catch(() => {
       // A catalogue entry without a curated JSON file remains usable with its
       // lightweight fallback statement and starter until its content is added.
