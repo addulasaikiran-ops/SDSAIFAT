@@ -34,7 +34,7 @@ export default {
           headers['X-RapidAPI-Host'] = submitUrl.host
         }
         submitUrl.searchParams.set('base64_encoded', 'false')
-        submitUrl.searchParams.set('wait', 'true')
+        submitUrl.searchParams.set('wait', 'false')
 
         const upstream = await fetch(submitUrl, {
           method: 'POST',
