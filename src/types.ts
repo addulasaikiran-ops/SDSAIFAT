@@ -1,4 +1,4 @@
-export type Difficulty = 'Easy' | 'Medium' | 'Hard'
+export type Difficulty = 'Easy' | 'Medium' | 'Hard' | 'Unknown'
 
 export interface Problem {
   id: string
@@ -11,6 +11,9 @@ export interface Problem {
   constraints: string[]
   starterCode: string
   testCases: { input: string; expectedOutput: string }[]
+  externalUrl?: string | null
+  status?: 'Not Started' | 'In Progress' | 'Solved'
+  sheetOrder?: number
 }
 
 export interface ActivityDay {
