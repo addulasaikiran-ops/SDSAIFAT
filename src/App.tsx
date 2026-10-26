@@ -9,20 +9,57 @@ import {
 import { problems } from './data/problems'
 import { buildActivityGrid, calculateStreaks } from './lib/streak'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
-import type { Problem } from './types'
+import type { ActivityDay, Problem } from './types'
 
 type View = 'dashboard' | 'problems' | 'workspace' | 'progress'
 type RunState = 'idle' | 'running' | 'done' | 'error'
 
-// Temporary visual preview data only; it is not real user activity.
-const sampleActivity = [] as { date: string; solved: number }[]
+type PracticeStatus = NonNullable<Problem['status']>
+type SavedPracticeState = {
+  statuses: Record<string, PracticeStatus>
+  drafts: Record<string, string>
+  activity: ActivityDay[]
+}
 
-const starterCode = `class Solution {
-    public int solve() {
-        // Write your solution here
-        return 0;
+const PRACTICE_STORAGE_KEY = 'sdsaifat-practice-v1'
+const emptyPracticeState: SavedPracticeState = { statuses: {}, drafts: {}, activity: [] }
+
+function localDateKey(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return [year, month, day].join('-')
+}
+
+function readPracticeState(): SavedPracticeState {
+  if (typeof window === 'undefined') return emptyPracticeState
+  try {
+    const raw = window.localStorage.getItem(PRACTICE_STORAGE_KEY)
+    if (!raw) return emptyPracticeState
+    const parsed = JSON.parse(raw) as Partial<SavedPracticeState>
+    const allowedStatuses: PracticeStatus[] = ['Not Started', 'In Progress', 'Solved']
+    const statuses: Record<string, PracticeStatus> = {}
+    const drafts: Record<string, string> = {}
+    if (parsed.statuses && typeof parsed.statuses === 'object') {
+      for (const [id, status] of Object.entries(parsed.statuses)) {
+        if (allowedStatuses.includes(status as PracticeStatus)) statuses[id] = status as PracticeStatus
+      }
     }
-}`
+    if (parsed.drafts && typeof parsed.drafts === 'object') {
+      for (const [id, draft] of Object.entries(parsed.drafts)) {
+        if (typeof draft === 'string') drafts[id] = draft
+      }
+    }
+    const activity = Array.isArray(parsed.activity)
+      ? parsed.activity.filter((day) => day && typeof day.date === 'string' && Number.isFinite(day.solved) && day.solved > 0)
+      : []
+    return { statuses, drafts, activity }
+  } catch {
+    return emptyPracticeState
+  }
+}
+
+const starterCode = 'public class Main {\n    public static void main(String[] args) {\n        // Write your Java code here\n        System.out.println("Hello, SDSAIFAT!");\n    }\n}'
 
 export default function App() {
   const [view, setView] = useState<View>('dashboard')
