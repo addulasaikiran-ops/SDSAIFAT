@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import {
   Activity, ArrowDownUp, ArrowLeft, ArrowRight, Bell, BookOpen, Check,
-  ChevronDown, CircleHelp, Code2, Command, Flame, Gauge, ListFilter,
+  ChevronDown, CircleHelp, Code2, Command, Flame, Gauge, Github, ListFilter,
   LogOut, Menu, Play, Search, Settings2, ShieldCheck, Sparkles, Terminal,
   Trophy, X, Zap,
 } from 'lucide-react'
