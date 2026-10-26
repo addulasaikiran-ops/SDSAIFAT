@@ -205,6 +205,15 @@ export default function App() {
     setIsRunning(true)
     setRunState('running')
     setOutput('Compiling and running Java 17…')
+    if (selectedProblem) {
+      setPracticeState((previous) => ({
+        ...previous,
+        drafts: { ...previous.drafts, [selectedProblem.id]: code },
+        statuses: previous.statuses[selectedProblem.id] === 'Solved'
+          ? previous.statuses
+          : { ...previous.statuses, [selectedProblem.id]: 'In Progress' },
+      }))
+    }
     try {
       const response = await fetch('/api/run', {
         method: 'POST',
@@ -299,8 +308,8 @@ export default function App() {
             <div className="breadcrumbs"><span>Workspace</span><span className="crumb-slash">/</span><b>{view === 'dashboard' ? 'Overview' : view === 'problems' ? 'Problem set' : view === 'progress' ? 'Activity' : selectedProblem?.title ?? 'Workspace'}</b></div>
           </div>
           <div className="topbar-actions">
-            <div className="online-status"><span /> All systems normal</div>
-            <button className="icon-button topbar-bell" title="Notifications"><Bell size={17} /></button>
+            <div className="online-status"><span /> Drafts save on this device</div>
+            <button className="icon-button topbar-bell" title="Open problem set" onClick={() => setView('problems')}><BookOpen size={17} /></button>
             <button className="topbar-avatar" onClick={user ? signOut : signIn} title={user ? 'Sign out' : 'Sign in with Google'}>
               {user?.avatar ? <img src={user.avatar} alt="" /> : user ? (user.name ?? 'U').charAt(0).toUpperCase() : <span>G</span>}
             </button>
@@ -311,7 +320,7 @@ export default function App() {
           <section className="workspace-page">
             <div className="workspace-heading">
               <button className="back-link" onClick={() => setView('problems')}><ArrowLeft size={15} /> All problems</button>
-              <div className="workspace-title-row"><div><div className="eyebrow">PROBLEM WORKSPACE</div><h1>{selectedProblem.title}</h1></div><span className={`difficulty-pill ${selectedProblem.difficulty.toLowerCase()}`}>{selectedProblem.difficulty}</span></div>
+              <div className="workspace-title-row"><div><div className="eyebrow">PROBLEM WORKSPACE</div><h1>{selectedProblem.title} <small className="problem-id-label">{selectedProblem.externalId ? "#" + selectedProblem.externalId : "Practice"}</small></h1></div><span className={`difficulty-pill ${selectedProblem.difficulty.toLowerCase()}`}>{selectedProblem.difficulty === "Unknown" ? "Not tagged" : selectedProblem.difficulty}</span></div>
               <div className="problem-topics">{selectedProblem.topics.map((topic) => <span key={topic}>{topic}</span>)}{selectedProblem.externalUrl && <a href={selectedProblem.externalUrl} target="_blank" rel="noreferrer">Open original problem ↗</a>}</div>
             </div>
             <div className="coding-layout">
@@ -325,10 +334,10 @@ export default function App() {
                 <div className="statement-footer"><span><BookOpen size={14} /> Problem {selectedProblem.sheetOrder ?? problems.findIndex((p) => p.id === selectedProblem.id) + 1} of {problems.length}</span><span>Java 17</span></div><div className="problem-navigation"><button className="button-secondary" onClick={() => moveProblem(-1)} disabled={problems.findIndex((p) => p.id === selectedProblem.id) <= 0}><ArrowLeft size={14} /> Previous</button><button className="button-secondary" onClick={() => moveProblem(1)} disabled={problems.findIndex((p) => p.id === selectedProblem.id) >= problems.length - 1}>Next problem <ArrowRight size={14} /></button></div>
               </section>
               <section className="panel editor-panel">
-                <div className="editor-toolbar"><div className="editor-tab"><span className="java-badge">J</span> Solution.java <X size={13} /></div><button className="editor-setting"><Settings2 size={15} /> Settings <ChevronDown size={13} /></button></div>
-                <div className="editor-host"><Editor height="100%" language="java" theme="vs-dark" value={code} onChange={(value) => setCode(value ?? '')} options={{ minimap: { enabled: false }, fontSize: 13, lineNumbers: 'on', scrollBeyondLastLine: false, automaticLayout: true, tabSize: 4, padding: { top: 18 }, fontFamily: "'JetBrains Mono', monospace" }} /></div>
+                <div className="editor-toolbar"><div className="editor-tab"><span className="java-badge">J</span> Main.java <X size={13} /></div><span className="editor-save-status"><Check size={13} /> Auto-saves locally</span></div>
+                <div className="editor-host"><Editor height="100%" language="java" theme="vs-dark" value={code} onChange={(value) => handleCodeChange(value ?? '')} options={{ minimap: { enabled: false }, fontSize: 13, lineNumbers: 'on', scrollBeyondLastLine: false, automaticLayout: true, tabSize: 4, padding: { top: 18 }, fontFamily: "'JetBrains Mono', monospace" }} /></div>
                 <div className="console-panel"><div className="console-heading"><div><Terminal size={15} /><b>Console</b><span className={`run-indicator ${runState}`} /></div><button className="icon-button" title="Clear console" onClick={() => { setOutput('Run your code to see output here.'); setRunState('idle') }}><X size={15} /></button></div><pre className={`console-output ${runState}`}>{output}</pre></div>
-                <div className="editor-footer"><span className="language-label"><span className="language-dot" /> Java 17</span><div><button className="button-secondary" onClick={() => { setCode(selectedProblem.starterCode); setOutput('Code reset.'); setRunState('idle') }}>Reset</button><button className="button-primary run-button" onClick={runCode} disabled={isRunning}><Play size={14} fill="currentColor" /> {isRunning ? 'Running…' : 'Run code'}</button><button className="button-submit" onClick={submitCode}><Zap size={14} /> Submit</button></div></div>
+                <div className="editor-footer"><span className="language-label"><span className="language-dot" /> Java 17</span><div><button className="button-secondary" onClick={resetCurrentCode}>Reset</button><button className="button-secondary mark-solved-button" onClick={() => markProblemSolved(selectedProblem)} disabled={getProblemStatus(selectedProblem.id) === 'Solved'}><Check size={14} /> {getProblemStatus(selectedProblem.id) === 'Solved' ? 'Solved' : 'Mark solved'}</button><button className="button-primary run-button" onClick={runCode} disabled={isRunning}><Play size={14} fill="currentColor" /> {isRunning ? 'Running…' : 'Run code'}</button><button className="button-submit" onClick={submitCode}><Zap size={14} /> Submit</button></div></div>
               </section>
             </div>
           </section>
