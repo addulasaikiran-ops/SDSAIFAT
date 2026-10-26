@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "lint": "eslint ."
+    "preview": "npm run build && wrangler dev",
+    "lint": "eslint .",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
