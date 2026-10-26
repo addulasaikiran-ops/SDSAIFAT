@@ -182,7 +182,7 @@ function App() {
             <div className="online-status"><span /> All systems normal</div>
             <button className="icon-button topbar-bell" title="Notifications"><Bell size={17} /></button>
             <button className="topbar-avatar" onClick={user ? signOut : signIn} title={user ? 'Sign out' : 'Sign in with Google'}>
-              {user?.avatar ? <img src={user.avatar} alt="" /> : user ? (user.name ?? 'U').charAt(0).toUpperCase() : <Github size={17} />}
+              {user?.avatar ? <img src={user.avatar} alt="" /> : user ? (user.name ?? 'U').charAt(0).toUpperCase() : <span>G</span>}
             </button>
           </div>
         </header>
