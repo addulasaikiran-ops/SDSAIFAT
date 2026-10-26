@@ -127,7 +127,7 @@ function App() {
       })
       if (!response.ok) throw new Error(`Execution request failed (${response.status}). Check your Judge0 endpoint, CORS settings, and provider limits.`)
       let result = await response.json() as { token?: string; stdout?: string | null; stderr?: string | null; compile_output?: string | null; message?: string; status?: { id?: number; description?: string } }
-      if (result.token && !result.status?.id) {
+      if (result.token && (!result.status || result.status.id === undefined || result.status.id <= 2)) {
         for (let attempt = 0; attempt < 15; attempt++) {
           await new Promise((resolve) => window.setTimeout(resolve, 1000))
           const pollResponse = await fetch(`${baseUrl}/${encodeURIComponent(result.token)}?base64_encoded=false`, { headers: { Accept: 'application/json' } })
