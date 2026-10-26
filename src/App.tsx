@@ -6,12 +6,12 @@ import { problems } from './data/problems'
 import WorkspacePage from './components/WorkspacePage'
 import { buildActivityGrid, calculateStreaks } from './lib/streak'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
-import type { ActivityDay, Problem } from './types'
+import type { ActivityDay, CatalogueProblem } from './types'
 
 type View = 'dashboard' | 'problems' | 'workspace' | 'progress'
 type RunState = 'idle' | 'running' | 'done' | 'error'
 
-type PracticeStatus = NonNullable<Problem['status']>
+type PracticeStatus = NonNullable<CatalogueProblem['status']>
 type SavedPracticeState = {
   statuses: Record<string, PracticeStatus>
   drafts: Record<string, string>
@@ -67,7 +67,7 @@ const starterCode = 'public class Main {\n    public static void main(String[] a
 
 export default function App() {
   const [view, setView] = useState<View>('dashboard')
-  const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null)
+  const [selectedProblem, setSelectedProblem] = useState<CatalogueProblem | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [difficulty, setDifficulty] = useState('All')
   const [topicFilter, setTopicFilter] = useState('All')
@@ -151,7 +151,7 @@ export default function App() {
     setUser(null)
   }
 
-  const openProblem = (problem: Problem) => {
+  const openProblem = (problem: CatalogueProblem) => {
     setSelectedProblem(problem)
     setCode(practiceState.drafts[problem.id] ?? problem.starterCode)
     setStdin(practiceState.stdinByProblem[problem.id] ?? '')
@@ -182,7 +182,7 @@ export default function App() {
     })
   }
 
-  const markProblemSolved = (problem: Problem) => {
+  const markProblemSolved = (problem: CatalogueProblem) => {
     setPracticeState((previous) => {
       if (previous.statuses[problem.id] === 'Solved') return previous
       const today = localDateKey()
