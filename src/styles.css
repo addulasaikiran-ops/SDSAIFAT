@@ -330,3 +330,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   .language-label { display: none; }
   .setup-modal { padding: 23px 19px; }
 }
+
+
+/* Practice workflow improvements */
+.editor-save-status { display: inline-flex; align-items: center; gap: 6px; color: #a9c779; font-size: 10px; }
+.editor-save-status svg { flex: 0 0 auto; }
+.problem-id-label { margin-left: 5px; color: #898b95; font: 500 12px 'DM Mono', monospace; vertical-align: middle; }
+.problem-number { display: inline-block; margin-right: 8px; color: #777b86; font: 10px 'DM Mono', monospace; }
+.status-dot { display: block; width: 14px; height: 14px; border: 1px solid #484a52; border-radius: 50%; background: transparent; }
+.status-dot.status-in-progress { border-color: #83b4e8; background: radial-gradient(circle at center, #83b4e8 0 3px, transparent 3.5px); }
+.status-dot.status-solved { border-color: var(--lime); background: var(--lime); box-shadow: inset 0 0 0 3px #20251a; }
+.mark-solved-button:disabled { color: var(--lime); border-color: #43542a; background: #22291c; opacity: 1; }
+.problem-table-row:focus-visible { position: relative; z-index: 1; outline-offset: -2px; }
+@media (max-width: 720px) {
+  .editor-save-status { font-size: 9px; }
+  .problem-number { margin-right: 5px; }
+}
