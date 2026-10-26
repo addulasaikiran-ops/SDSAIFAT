@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import {
   Activity, ArrowDownUp, ArrowLeft, ArrowRight, BookOpen, Check,
-  ChevronDown, CircleHelp, Code2, Command, Flame, Gauge, Github, ListFilter,
+  ChevronDown, CircleHelp, Code2, Command, Flame, Gauge, ListFilter,
   LogOut, Menu, Play, Search, Settings2, ShieldCheck, Sparkles, Terminal,
   Trophy, X, Zap,
 } from 'lucide-react'
@@ -114,6 +114,10 @@ export default function App() {
   const inProgressCount = useMemo(() => problems.filter((problem) => practiceState.statuses[problem.id] === 'In Progress').length, [practiceState.statuses])
   const completionPercent = Math.round((solvedCount / problems.length) * 100)
   const activeDays = practiceState.activity.filter((day) => day.solved > 0).length
+  const hasWrittenCode = Object.entries(practiceState.drafts).some(([id, draft]) => {
+    const problem = problems.find((item) => item.id === id)
+    return Boolean(problem && draft.trim() && draft.trim() !== problem.starterCode.trim())
+  })
   const getProblemStatus = (problemId: string): PracticeStatus => practiceState.statuses[problemId] ?? 'Not Started'
 
   const filteredProblems = useMemo(() => problems.filter((problem) => {
@@ -184,14 +188,18 @@ export default function App() {
   const resetCurrentCode = () => {
     if (!selectedProblem) return
     setCode(selectedProblem.starterCode)
-    setPracticeState((previous) => ({
-      ...previous,
-      drafts: { ...previous.drafts, [selectedProblem.id]: selectedProblem.starterCode },
-      statuses: previous.statuses[selectedProblem.id] === 'Solved'
-        ? previous.statuses
-        : { ...previous.statuses, [selectedProblem.id]: 'Not Started' },
-    }))
-    setOutput('Starter code restored and saved on this device.')
+    setPracticeState((previous) => {
+      const drafts = { ...previous.drafts }
+      delete drafts[selectedProblem.id]
+      return {
+        ...previous,
+        drafts,
+        statuses: previous.statuses[selectedProblem.id] === 'Solved'
+          ? previous.statuses
+          : { ...previous.statuses, [selectedProblem.id]: 'Not Started' },
+      }
+    })
+    setOutput('Starter code restored. Your edited draft was cleared.')
     setRunState('idle')
   }
   const moveProblem = (direction: -1 | 1) => {
@@ -326,10 +334,25 @@ export default function App() {
             <div className="coding-layout">
               <section className="panel statement-panel">
                 <div className="panel-header"><div className="panel-title"><BookOpen size={16} /><b>Description</b></div><span className="panel-menu">•••</span></div>
-                <div className="statement-content"><h2>{selectedProblem.title}</h2><p>{selectedProblem.statement}</p>{selectedProblem.statement.includes('not included in the supplied spreadsheet') && selectedProblem.externalUrl && <p><a href={selectedProblem.externalUrl} target="_blank" rel="noreferrer">View the official statement, examples, and constraints ↗</a></p>}
-                  <h3>Examples</h3>
-                  {selectedProblem.examples.map((example, index) => <div className="example-box" key={index}><b>Example {index + 1}</b><code>Input: {example.input}</code><code>Output: {example.output}</code>{example.explanation && <p>{example.explanation}</p>}</div>)}
-                  <h3>Constraints</h3><ul>{selectedProblem.constraints.map((constraint) => <li key={constraint}><code>{constraint}</code></li>)}</ul>
+                <div className="statement-content">
+                  <h2>{selectedProblem.title}</h2>
+                  {selectedProblem.statement.includes('not included in the supplied spreadsheet') ? (
+                    <div className="statement-notice">
+                      <div className="notice-kicker"><BookOpen size={15} /> PROBLEM DETAILS NOT INCLUDED</div>
+                      <p>The supplied spreadsheet contains this problem's title and topic, but not the full statement, examples, constraints, or verified test cases.</p>
+                      {selectedProblem.externalUrl
+                        ? <a className="official-problem-link" href={selectedProblem.externalUrl} target="_blank" rel="noreferrer">Open official LeetCode problem <ArrowRight size={14} /></a>
+                        : <p>Use the runnable Java template to practice input, output, and basic Java syntax.</p>}
+                      <p className="notice-footnote">You can run Java code here. Accepted/Wrong Answer judging remains unavailable until verified test cases are added.</p>
+                    </div>
+                  ) : <p>{selectedProblem.statement}</p>}
+                  {selectedProblem.examples.length > 0 && <>
+                    <h3>Examples</h3>
+                    {selectedProblem.examples.map((example, index) => <div className="example-box" key={index}><b>Example {index + 1}</b><code>Input: {example.input}</code><code>Output: {example.output}</code>{example.explanation && <p>{example.explanation}</p>}</div>)}
+                  </>}
+                  {selectedProblem.constraints.length > 0 && <>
+                    <h3>Constraints</h3><ul>{selectedProblem.constraints.map((constraint) => <li key={constraint}><code>{constraint}</code></li>)}</ul>
+                  </>}
                 </div>
                 <div className="statement-footer"><span><BookOpen size={14} /> Problem {selectedProblem.sheetOrder ?? problems.findIndex((p) => p.id === selectedProblem.id) + 1} of {problems.length}</span><span>Java 17</span></div><div className="problem-navigation"><button className="button-secondary" onClick={() => moveProblem(-1)} disabled={problems.findIndex((p) => p.id === selectedProblem.id) <= 0}><ArrowLeft size={14} /> Previous</button><button className="button-secondary" onClick={() => moveProblem(1)} disabled={problems.findIndex((p) => p.id === selectedProblem.id) >= problems.length - 1}>Next problem <ArrowRight size={14} /></button></div>
               </section>
@@ -359,9 +382,9 @@ export default function App() {
           </section>
         ) : (
           <section className="content-page">
-            <div className="welcome-row"><div><div className="eyebrow"><Sparkles size={13} /> YOUR PERSONAL DSA SPACE</div><h1>Make progress,<br /><span>one problem at a time.</span></h1><p>A focused place to practice, learn patterns, and build a habit that sticks.</p><div className="welcome-actions"><button className="button-primary" onClick={() => setView('problems')}>Explore problems <ArrowRight size={15} /></button><button className="button-secondary" onClick={user ? signOut : signIn}>{user ? <LogOut size={15} /> : <Github size={15} />}{user ? 'Sign out' : 'Continue with Google'}</button></div></div><div className="hero-art"><div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" /><div className="hero-center"><Code2 size={44} strokeWidth={1.35} /><span>DSA</span></div><div className="float-chip chip-top"><Zap size={14} /> Keep building</div><div className="float-chip chip-bottom"><Check size={14} /> Every day counts</div></div></div>
+            <div className="welcome-row"><div><div className="eyebrow"><Sparkles size={13} /> YOUR PERSONAL DSA SPACE</div><h1>Make progress,<br /><span>one problem at a time.</span></h1><p>A focused place to practice, learn patterns, and build a habit that sticks.</p><div className="welcome-actions"><button className="button-primary" onClick={() => setView('problems')}>Explore problems <ArrowRight size={15} /></button><button className="button-secondary" onClick={user ? signOut : signIn}>{user ? <LogOut size={15} /> : <ArrowRight size={15} />}{user ? 'Sign out' : 'Continue with Google'}</button></div></div><div className="hero-art"><div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" /><div className="hero-center"><Code2 size={44} strokeWidth={1.35} /><span>DSA</span></div><div className="float-chip chip-top"><Zap size={14} /> Keep building</div><div className="float-chip chip-bottom"><Check size={14} /> Every day counts</div></div></div>
             <div className="stats-grid"><StatCard icon={<Check size={17} />} label="Problems solved" value={String(solvedCount)} unit="problems" tint="green" detail="Self-reported completions" /><StatCard icon={<Flame size={17} />} label="Current streak" value={String(streaks.currentStreak)} unit="days" tint="orange" detail="Make today count" /><StatCard icon={<Trophy size={17} />} label="Longest streak" value={String(streaks.longestStreak)} unit="days" tint="purple" detail="Your personal record" /><StatCard icon={<Gauge size={17} />} label="Your completion" value={String(completionPercent)} unit="%" tint="blue" detail={"Of " + problems.length + " catalogued problems"} /></div>
-            <div className="dashboard-lower"><ActivityPanel grid={activityGrid} /><section className="panel getting-started"><div className="section-heading"><div><div className="eyebrow">A SIMPLE ROUTINE</div><h2>Your next steps</h2></div><span className="heading-icon"><ArrowRight size={16} /></span></div><div className="steps-list"><Step number="01" title="Choose a question" description="Browse the imported 350-problem catalogue." done={solvedCount > 0 || inProgressCount > 0} /><Step number="02" title="Write your solution" description="Code drafts save automatically in this browser." done={Object.keys(practiceState.drafts).length > 0} /><Step number="03" title="Track a completion" description="Mark a question solved to update your personal stats." done={solvedCount > 0} /></div><button className="text-link" onClick={() => setView('problems')}>Go to problem set <ArrowRight size={14} /></button></section></div>
+            <div className="dashboard-lower"><ActivityPanel grid={activityGrid} /><section className="panel getting-started"><div className="section-heading"><div><div className="eyebrow">A SIMPLE ROUTINE</div><h2>Your next steps</h2></div><span className="heading-icon"><ArrowRight size={16} /></span></div><div className="steps-list"><Step number="01" title="Choose a question" description="Browse the imported 350-problem catalogue." done={solvedCount > 0 || inProgressCount > 0} /><Step number="02" title="Write your solution" description="Code drafts save automatically in this browser." done={hasWrittenCode} /><Step number="03" title="Track a completion" description="Mark a question solved to update your personal stats." done={solvedCount > 0} /></div><button className="text-link" onClick={() => setView('problems')}>Go to problem set <ArrowRight size={14} /></button></section></div>
             <div className="bottom-banner"><div className="banner-icon"><Zap size={19} /></div><div><b>Consistency beats intensity.</b><p>Even 20 focused minutes can move you forward.</p></div><button onClick={() => setView('progress')}>View activity <ArrowRight size={15} /></button></div>
           </section>
         )}
@@ -369,7 +392,7 @@ export default function App() {
         <footer className="footer"><span>© 2026 SDSAIFAT</span><span><i /> Built for focused practice</span><button onClick={() => setShowAuthNotice(true)}>Setup guide</button></footer>
       </main>
 
-      {showAuthNotice && <div className="modal-backdrop" onClick={() => setShowAuthNotice(false)}><div className="setup-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close icon-button" onClick={() => setShowAuthNotice(false)}><X size={17} /></button><div className="modal-emblem"><Settings2 size={22} /></div><div className="eyebrow">CONFIGURATION</div><h2>Connect your services</h2><p>Your code drafts and self-reported progress save in this browser. To sync progress across devices or enable Google sign-in:</p><ol><li>Create a Supabase project and add its URL and anon key to <code>.env.local</code>.</li><li>Enable Google as an Auth provider in Supabase and configure the OAuth redirect URLs.</li><li>The Java runner is routed through the Cloudflare Worker; a provider-specific Judge0 key may be needed for reliable execution.</li></ol><div className="config-status"><span className={isSupabaseConfigured ? 'status-on' : ''} /> Supabase {isSupabaseConfigured ? 'configured' : 'awaiting credentials'}</div><button className="button-primary modal-action" onClick={() => { setShowAuthNotice(false); if (!user) void signIn() }}>Continue with Google <ArrowRight size={15} /></button></div></div>}
+      {showAuthNotice && <div className="modal-backdrop" onClick={() => setShowAuthNotice(false)}><div className="setup-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close icon-button" onClick={() => setShowAuthNotice(false)}><X size={17} /></button><div className="modal-emblem"><Settings2 size={22} /></div><div className="eyebrow">CONFIGURATION</div><h2>Connect your services</h2><p>Your code drafts and self-reported progress save in this browser today. Cross-device sync requires a database and sync integration that are not connected yet.</p><ol><li>Create a Supabase project and add its URL and anon key to <code>.env.local</code> to enable sign-in.</li><li>Enable Google as an Auth provider in Supabase and configure the OAuth redirect URLs.</li><li>The Cloudflare Worker has the Java execution route. A Judge0 API key may be required depending on the provider you use.</li></ol><div className="config-status"><span className={isSupabaseConfigured ? 'status-on' : ''} /> Supabase {isSupabaseConfigured ? 'configured' : 'awaiting credentials'}</div><button className="button-primary modal-action" onClick={() => { setShowAuthNotice(false); if (!user) void signIn() }}>Continue with Google <ArrowRight size={15} /></button></div></div>}
     </div>
   )
 }
