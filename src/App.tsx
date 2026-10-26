@@ -144,11 +144,56 @@ export default function App() {
 
   const openProblem = (problem: Problem) => {
     setSelectedProblem(problem)
-    setCode(problem.starterCode)
+    setCode(practiceState.drafts[problem.id] ?? problem.starterCode)
     setOutput('Run your code to see output here.')
     setView('workspace')
   }
 
+  const handleCodeChange = (value: string) => {
+    setCode(value)
+    if (!selectedProblem) return
+    setPracticeState((previous) => {
+      const currentStatus = previous.statuses[selectedProblem.id] ?? 'Not Started'
+      const nextStatus: PracticeStatus = currentStatus === 'Solved' ? 'Solved' : value.trim() ? 'In Progress' : 'Not Started'
+      return {
+        ...previous,
+        drafts: { ...previous.drafts, [selectedProblem.id]: value },
+        statuses: { ...previous.statuses, [selectedProblem.id]: nextStatus },
+      }
+    })
+  }
+
+  const markProblemSolved = (problem: Problem) => {
+    setPracticeState((previous) => {
+      if (previous.statuses[problem.id] === 'Solved') return previous
+      const today = localDateKey()
+      const existingDay = previous.activity.find((day) => day.date === today)
+      const activity = existingDay
+        ? previous.activity.map((day) => day.date === today ? { ...day, solved: day.solved + 1 } : day)
+        : [...previous.activity, { date: today, solved: 1 }]
+      return {
+        ...previous,
+        statuses: { ...previous.statuses, [problem.id]: 'Solved' },
+        activity,
+      }
+    })
+    setOutput('Marked as solved in your local tracker. This is self-reported; the app has not automatically judged this problem against verified test cases.')
+    setRunState('idle')
+  }
+
+  const resetCurrentCode = () => {
+    if (!selectedProblem) return
+    setCode(selectedProblem.starterCode)
+    setPracticeState((previous) => ({
+      ...previous,
+      drafts: { ...previous.drafts, [selectedProblem.id]: selectedProblem.starterCode },
+      statuses: previous.statuses[selectedProblem.id] === 'Solved'
+        ? previous.statuses
+        : { ...previous.statuses, [selectedProblem.id]: 'Not Started' },
+    }))
+    setOutput('Starter code restored and saved on this device.')
+    setRunState('idle')
+  }
   const moveProblem = (direction: -1 | 1) => {
     if (!selectedProblem) return
     const currentIndex = problems.findIndex((problem) => problem.id === selectedProblem.id)
