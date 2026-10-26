@@ -24,7 +24,7 @@ const starterCode = `class Solution {
     }
 }`
 
-function App() {
+export default function App() {
   const [view, setView] = useState<View>('dashboard')
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
