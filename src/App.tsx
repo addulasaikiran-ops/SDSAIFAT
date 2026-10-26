@@ -102,39 +102,62 @@ function App() {
   }
 
   const runCode = async () => {
-    const apiUrl = import.meta.env.VITE_JUDGE0_API_URL as string | undefined
+    const apiUrl = (import.meta.env.VITE_JUDGE0_API_URL as string | undefined)?.trim()
     if (!apiUrl) {
-      setOutput('Java execution is not configured yet. Add VITE_JUDGE0_API_URL to .env.local and connect a Judge0 instance. API secrets must be kept server-side for production.')
+      setOutput('Java execution is not configured. Set VITE_JUDGE0_API_URL to your Judge0 /submissions endpoint. If your provider requires an API key, route requests through a server-side proxy; never put secret keys in VITE_ variables.')
       setRunState('error')
       return
     }
     setIsRunning(true)
     setRunState('running')
-    setOutput('Submitting Java code to the execution service…')
+    setOutput('Compiling and running Java 17…')
     try {
-      const response = await fetch(apiUrl, {
+      const baseUrl = apiUrl.replace(/\\/$/, '')
+      const submitUrl = baseUrl.includes('?') ? baseUrl : baseUrl + '?base64_encoded=false&wait=true'
+      const response = await fetch(submitUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
           language_id: 62,
           source_code: code,
           stdin: '',
-          expected_output: '',
           cpu_time_limit: 2,
           wall_time_limit: 5,
         }),
       })
-      if (!response.ok) throw new Error(`Execution request failed (${response.status})`)
-      const result = await response.json() as { stdout?: string | null; stderr?: string | null; compile_output?: string | null; message?: string; status?: { description?: string } }
-      const text = result.stdout || result.stderr || result.compile_output || result.message || result.status?.description || 'Execution completed with no output.'
-      setOutput(text)
-      setRunState(result.stderr || result.compile_output ? 'error' : 'done')
+      if (!response.ok) throw new Error(`Execution request failed (${response.status}). Check your Judge0 endpoint, CORS settings, and provider limits.`)
+      let result = await response.json() as { token?: string; stdout?: string | null; stderr?: string | null; compile_output?: string | null; message?: string; status?: { id?: number; description?: string } }
+      if (result.token && !result.status?.id) {
+        for (let attempt = 0; attempt < 15; attempt++) {
+          await new Promise((resolve) => window.setTimeout(resolve, 1000))
+          const pollResponse = await fetch(`${baseUrl}/${encodeURIComponent(result.token)}?base64_encoded=false`, { headers: { Accept: 'application/json' } })
+          if (!pollResponse.ok) throw new Error(`Could not retrieve execution result (${pollResponse.status}).`)
+          result = await pollResponse.json() as typeof result
+          if (result.status && result.status.id > 2) break
+        }
+      }
+      const outputText = result.stdout?.trimEnd()
+      const details = result.stderr || result.compile_output || result.message
+      const statusText = result.status?.description
+      setOutput([statusText, details, outputText].filter(Boolean).join('\\n\\n') || 'Execution completed with no output.')
+      setRunState(result.status && result.status.id !== 3 ? 'error' : details ? 'error' : 'done')
     } catch (error) {
       setOutput(error instanceof Error ? error.message : 'Could not run code.')
       setRunState('error')
     } finally {
       setIsRunning(false)
     }
+  }
+
+  const submitCode = () => {
+    if (!selectedProblem) return
+    if (!selectedProblem.testCases.length) {
+      setOutput('Not submitted for judging: this catalogue entry has no verified test cases yet. Run code to check compilation/output, and add official or reviewed test cases before enabling Accepted/Wrong Answer results.')
+      setRunState('error')
+      return
+    }
+    setOutput('Automated multi-test judging is not enabled yet. The test cases need to be wired to the execution service before a submission can receive an accepted verdict.')
+    setRunState('error')
   }
 
   const navItems: { id: View; label: string; icon: typeof Gauge }[] = [
@@ -217,7 +240,7 @@ function App() {
                 <div className="editor-toolbar"><div className="editor-tab"><span className="java-badge">J</span> Solution.java <X size={13} /></div><button className="editor-setting"><Settings2 size={15} /> Settings <ChevronDown size={13} /></button></div>
                 <div className="editor-host"><Editor height="100%" language="java" theme="vs-dark" value={code} onChange={(value) => setCode(value ?? '')} options={{ minimap: { enabled: false }, fontSize: 13, lineNumbers: 'on', scrollBeyondLastLine: false, automaticLayout: true, tabSize: 4, padding: { top: 18 }, fontFamily: "'JetBrains Mono', monospace" }} /></div>
                 <div className="console-panel"><div className="console-heading"><div><Terminal size={15} /><b>Console</b><span className={`run-indicator ${runState}`} /></div><button className="icon-button" title="Clear console" onClick={() => { setOutput('Run your code to see output here.'); setRunState('idle') }}><X size={15} /></button></div><pre className={`console-output ${runState}`}>{output}</pre></div>
-                <div className="editor-footer"><span className="language-label"><span className="language-dot" /> Java 17</span><div><button className="button-secondary" onClick={() => { setCode(selectedProblem.starterCode); setOutput('Code reset.'); setRunState('idle') }}>Reset</button><button className="button-primary run-button" onClick={runCode} disabled={isRunning}><Play size={14} fill="currentColor" /> {isRunning ? 'Running…' : 'Run code'}</button><button className="button-submit" onClick={() => setOutput('Submission evaluation will be enabled when server-side test execution is configured.')}><Zap size={14} /> Submit</button></div></div>
+                <div className="editor-footer"><span className="language-label"><span className="language-dot" /> Java 17</span><div><button className="button-secondary" onClick={() => { setCode(selectedProblem.starterCode); setOutput('Code reset.'); setRunState('idle') }}>Reset</button><button className="button-primary run-button" onClick={runCode} disabled={isRunning}><Play size={14} fill="currentColor" /> {isRunning ? 'Running…' : 'Run code'}</button><button className="button-submit" onClick={submitCode}><Zap size={14} /> Submit</button></div></div>
               </section>
             </div>
           </section>
