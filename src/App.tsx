@@ -67,6 +67,8 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [difficulty, setDifficulty] = useState('All')
   const [topicFilter, setTopicFilter] = useState('All')
+  const [statusFilter, setStatusFilter] = useState('All')
+  const [practiceState, setPracticeState] = useState<SavedPracticeState>(readPracticeState)
   const [code, setCode] = useState(starterCode)
   const [output, setOutput] = useState('Run your code to see output here.')
   const [runState, setRunState] = useState<RunState>('idle')
@@ -98,14 +100,30 @@ export default function App() {
     return () => listener.subscription.unsubscribe()
   }, [])
 
-  const streaks = useMemo(() => calculateStreaks(sampleActivity), [])
-  const activityGrid = useMemo(() => buildActivityGrid(sampleActivity, 20), [])
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(PRACTICE_STORAGE_KEY, JSON.stringify(practiceState))
+    } catch {
+      // Keep the session usable if browser storage is unavailable.
+    }
+  }, [practiceState])
+
+  const streaks = useMemo(() => calculateStreaks(practiceState.activity), [practiceState.activity])
+  const activityGrid = useMemo(() => buildActivityGrid(practiceState.activity, 20), [practiceState.activity])
+  const solvedCount = useMemo(() => problems.filter((problem) => practiceState.statuses[problem.id] === 'Solved').length, [practiceState.statuses])
+  const inProgressCount = useMemo(() => problems.filter((problem) => practiceState.statuses[problem.id] === 'In Progress').length, [practiceState.statuses])
+  const completionPercent = Math.round((solvedCount / problems.length) * 100)
+  const activeDays = practiceState.activity.filter((day) => day.solved > 0).length
+  const getProblemStatus = (problemId: string): PracticeStatus => practiceState.statuses[problemId] ?? 'Not Started'
+
   const filteredProblems = useMemo(() => problems.filter((problem) => {
     const query = searchQuery.toLowerCase()
+    const status = practiceState.statuses[problem.id] ?? 'Not Started'
     return (problem.title.toLowerCase().includes(query) || problem.topics.some((topic) => topic.toLowerCase().includes(query)))
       && (difficulty === 'All' || problem.difficulty === difficulty)
       && (topicFilter === 'All' || problem.topics.includes(topicFilter))
-  }), [searchQuery, difficulty, topicFilter])
+      && (statusFilter === 'All' || status === statusFilter)
+  }), [searchQuery, difficulty, topicFilter, statusFilter, practiceState.statuses])
 
   const signIn = async () => {
     if (!supabase) {
