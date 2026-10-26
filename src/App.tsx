@@ -18,11 +18,12 @@ type PracticeStatus = NonNullable<Problem['status']>
 type SavedPracticeState = {
   statuses: Record<string, PracticeStatus>
   drafts: Record<string, string>
+  stdinByProblem: Record<string, string>
   activity: ActivityDay[]
 }
 
 const PRACTICE_STORAGE_KEY = 'sdsaifat-practice-v1'
-const emptyPracticeState: SavedPracticeState = { statuses: {}, drafts: {}, activity: [] }
+const emptyPracticeState: SavedPracticeState = { statuses: {}, drafts: {}, stdinByProblem: {}, activity: [] }
 
 function localDateKey(date = new Date()) {
   const year = date.getFullYear()
@@ -40,6 +41,7 @@ function readPracticeState(): SavedPracticeState {
     const allowedStatuses: PracticeStatus[] = ['Not Started', 'In Progress', 'Solved']
     const statuses: Record<string, PracticeStatus> = {}
     const drafts: Record<string, string> = {}
+    const stdinByProblem: Record<string, string> = {}
     if (parsed.statuses && typeof parsed.statuses === 'object') {
       for (const [id, status] of Object.entries(parsed.statuses)) {
         if (allowedStatuses.includes(status as PracticeStatus)) statuses[id] = status as PracticeStatus
@@ -50,10 +52,15 @@ function readPracticeState(): SavedPracticeState {
         if (typeof draft === 'string') drafts[id] = draft
       }
     }
+    if (parsed.stdinByProblem && typeof parsed.stdinByProblem === 'object') {
+      for (const [id, input] of Object.entries(parsed.stdinByProblem)) {
+        if (typeof input === 'string') stdinByProblem[id] = input
+      }
+    }
     const activity = Array.isArray(parsed.activity)
       ? parsed.activity.filter((day) => day && typeof day.date === 'string' && Number.isFinite(day.solved) && day.solved > 0)
       : []
-    return { statuses, drafts, activity }
+    return { statuses, drafts, stdinByProblem, activity }
   } catch {
     return emptyPracticeState
   }
@@ -70,6 +77,7 @@ export default function App() {
   const [statusFilter, setStatusFilter] = useState('All')
   const [practiceState, setPracticeState] = useState<SavedPracticeState>(readPracticeState)
   const [code, setCode] = useState(starterCode)
+  const [stdin, setStdin] = useState('')
   const [output, setOutput] = useState('Run your code to see output here.')
   const [runState, setRunState] = useState<RunState>('idle')
   const [isRunning, setIsRunning] = useState(false)
@@ -149,8 +157,18 @@ export default function App() {
   const openProblem = (problem: Problem) => {
     setSelectedProblem(problem)
     setCode(practiceState.drafts[problem.id] ?? problem.starterCode)
+    setStdin(practiceState.stdinByProblem[problem.id] ?? '')
     setOutput('Run your code to see output here.')
     setView('workspace')
+  }
+
+  const handleStdinChange = (value: string) => {
+    setStdin(value)
+    if (!selectedProblem) return
+    setPracticeState((previous) => ({
+      ...previous,
+      stdinByProblem: { ...previous.stdinByProblem, [selectedProblem.id]: value },
+    }))
   }
 
   const handleCodeChange = (value: string) => {
@@ -226,7 +244,7 @@ export default function App() {
       const response = await fetch('/api/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ source_code: code, stdin: '' }),
+        body: JSON.stringify({ source_code: code, stdin }),
       })
       const result = await response.json() as {
         stdout?: string | null
@@ -359,6 +377,10 @@ export default function App() {
               <section className="panel editor-panel">
                 <div className="editor-toolbar"><div className="editor-tab"><span className="java-badge">J</span> Main.java <X size={13} /></div><span className="editor-save-status"><Check size={13} /> Auto-saves locally</span></div>
                 <div className="editor-host"><Editor height="100%" language="java" theme="vs-dark" value={code} onChange={(value) => handleCodeChange(value ?? '')} options={{ minimap: { enabled: false }, fontSize: 13, lineNumbers: 'on', scrollBeyondLastLine: false, automaticLayout: true, tabSize: 4, padding: { top: 18 }, fontFamily: "'JetBrains Mono', monospace" }} /></div>
+                <div className="stdin-panel">
+                  <label htmlFor="custom-stdin"><span>Standard input</span><small>Saved for this problem</small></label>
+                  <textarea id="custom-stdin" value={stdin} onChange={(event) => handleStdinChange(event.target.value)} placeholder="Enter test input here, one value per line…" rows={3} spellCheck={false} />
+                </div>
                 <div className="console-panel"><div className="console-heading"><div><Terminal size={15} /><b>Console</b><span className={`run-indicator ${runState}`} /></div><button className="icon-button" title="Clear console" onClick={() => { setOutput('Run your code to see output here.'); setRunState('idle') }}><X size={15} /></button></div><pre className={`console-output ${runState}`}>{output}</pre></div>
                 <div className="editor-footer"><span className="language-label"><span className="language-dot" /> Java 17</span><div><button className="button-secondary" onClick={resetCurrentCode}>Reset</button><button className="button-secondary mark-solved-button" onClick={() => markProblemSolved(selectedProblem)} disabled={getProblemStatus(selectedProblem.id) === 'Solved'}><Check size={14} /> {getProblemStatus(selectedProblem.id) === 'Solved' ? 'Solved' : 'Mark solved'}</button><button className="button-primary run-button" onClick={runCode} disabled={isRunning}><Play size={14} fill="currentColor" /> {isRunning ? 'Running…' : 'Run code'}</button><button className="button-submit" onClick={submitCode}><Zap size={14} /> Submit</button></div></div>
               </section>
