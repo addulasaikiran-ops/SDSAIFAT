@@ -94,6 +94,13 @@ function App() {
     setView('workspace')
   }
 
+  const moveProblem = (direction: -1 | 1) => {
+    if (!selectedProblem) return
+    const currentIndex = problems.findIndex((problem) => problem.id === selectedProblem.id)
+    const nextProblem = problems[currentIndex + direction]
+    if (nextProblem) openProblem(nextProblem)
+  }
+
   const runCode = async () => {
     const apiUrl = import.meta.env.VITE_JUDGE0_API_URL as string | undefined
     if (!apiUrl) {
@@ -194,17 +201,17 @@ function App() {
             <div className="workspace-heading">
               <button className="back-link" onClick={() => setView('problems')}><ArrowLeft size={15} /> All problems</button>
               <div className="workspace-title-row"><div><div className="eyebrow">PROBLEM WORKSPACE</div><h1>{selectedProblem.title}</h1></div><span className={`difficulty-pill ${selectedProblem.difficulty.toLowerCase()}`}>{selectedProblem.difficulty}</span></div>
-              <div className="problem-topics">{selectedProblem.topics.map((topic) => <span key={topic}>{topic}</span>)}</div>
+              <div className="problem-topics">{selectedProblem.topics.map((topic) => <span key={topic}>{topic}</span>)}{selectedProblem.externalUrl && <a href={selectedProblem.externalUrl} target="_blank" rel="noreferrer">Open original problem ↗</a>}</div>
             </div>
             <div className="coding-layout">
               <section className="panel statement-panel">
                 <div className="panel-header"><div className="panel-title"><BookOpen size={16} /><b>Description</b></div><span className="panel-menu">•••</span></div>
-                <div className="statement-content"><h2>{selectedProblem.title}</h2><p>{selectedProblem.statement}</p>
+                <div className="statement-content"><h2>{selectedProblem.title}</h2><p>{selectedProblem.statement}</p>{selectedProblem.statement.includes('not included in the supplied spreadsheet') && selectedProblem.externalUrl && <p><a href={selectedProblem.externalUrl} target="_blank" rel="noreferrer">View the official statement, examples, and constraints ↗</a></p>}
                   <h3>Examples</h3>
                   {selectedProblem.examples.map((example, index) => <div className="example-box" key={index}><b>Example {index + 1}</b><code>Input: {example.input}</code><code>Output: {example.output}</code>{example.explanation && <p>{example.explanation}</p>}</div>)}
                   <h3>Constraints</h3><ul>{selectedProblem.constraints.map((constraint) => <li key={constraint}><code>{constraint}</code></li>)}</ul>
                 </div>
-                <div className="statement-footer"><span><BookOpen size={14} /> Problem details</span><span>Java 17</span></div>
+                <div className="statement-footer"><span><BookOpen size={14} /> Problem {selectedProblem.sheetOrder ?? problems.findIndex((p) => p.id === selectedProblem.id) + 1} of {problems.length}</span><span>Java 17</span></div><div className="problem-navigation"><button className="button-secondary" onClick={() => moveProblem(-1)} disabled={problems.findIndex((p) => p.id === selectedProblem.id) <= 0}><ArrowLeft size={14} /> Previous</button><button className="button-secondary" onClick={() => moveProblem(1)} disabled={problems.findIndex((p) => p.id === selectedProblem.id) >= problems.length - 1}>Next problem <ArrowRight size={14} /></button></div>
               </section>
               <section className="panel editor-panel">
                 <div className="editor-toolbar"><div className="editor-tab"><span className="java-badge">J</span> Solution.java <X size={13} /></div><button className="editor-setting"><Settings2 size={15} /> Settings <ChevronDown size={13} /></button></div>
@@ -219,7 +226,7 @@ function App() {
             <div className="page-heading"><div><div className="eyebrow">BUILD YOUR FOUNDATION</div><h1>Problem set<span>.</span></h1><p>A deliberate set of problems, one good solution at a time.</p></div><div className="heading-stamp"><Code2 size={16} /> JAVA TRACK</div></div>
             <div className="problem-summary-row"><div className="mini-stat"><span>Total problems</span><b>{problems.length}</b></div><div className="mini-stat"><span>Topics</span><b>{new Set(problems.flatMap((problem) => problem.topics)).size}</b></div><div className="mini-stat"><span>Completion</span><b>0%</b></div></div>
             <div className="panel table-panel">
-              <div className="table-toolbar"><div className="search-box"><Search size={16} /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search problems or topics..." /></div><div className="filter-controls"><label><ListFilter size={15} /><select value={difficulty} onChange={(event) => setDifficulty(event.target.value)}><option>All difficulties</option><option>Easy</option><option>Medium</option><option>Hard</option><option>Unknown</option></select><select aria-label="Filter by topic" value={topicFilter} onChange={(event) => setTopicFilter(event.target.value)}><option value="All">All topics</option>{Array.from(new Set(problems.flatMap((problem) => problem.topics))).sort().map((topic) => <option key={topic} value={topic}>{topic}</option>)}</select></label><button className="button-secondary compact-button" onClick={() => { setSearchQuery(''); setDifficulty('All'); setTopicFilter('All') }}><ArrowDownUp size={14} /> Reset</button></div></div>
+              <div className="table-toolbar"><div className="search-box"><Search size={16} /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search problems or topics..." /></div><div className="filter-controls"><label><ListFilter size={15} /><select value={difficulty} onChange={(event) => setDifficulty(event.target.value)}><option value="All">All difficulties</option><option>Easy</option><option>Medium</option><option>Hard</option><option>Unknown</option></select><select aria-label="Filter by topic" value={topicFilter} onChange={(event) => setTopicFilter(event.target.value)}><option value="All">All topics</option>{Array.from(new Set(problems.flatMap((problem) => problem.topics))).sort().map((topic) => <option key={topic} value={topic}>{topic}</option>)}</select></label><button className="button-secondary compact-button" onClick={() => { setSearchQuery(''); setDifficulty('All'); setTopicFilter('All') }}><ArrowDownUp size={14} /> Reset</button></div></div>
               {filteredProblems.length ? <div className="problem-table"><div className="problem-table-head"><span>STATUS</span><span>TITLE</span><span>DIFFICULTY</span><span>TOPICS</span><span /></div>{filteredProblems.map((problem) => <button className="problem-table-row" key={problem.id} onClick={() => openProblem(problem)}><span className="problem-status"><span className="status-empty" /></span><b>{problem.title}</b><span><i className={`difficulty-text ${problem.difficulty.toLowerCase()}`}>{problem.difficulty}</i>{problem.externalUrl && <a className="problem-external-link" href={problem.externalUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>LeetCode ↗</a>}</span><span className="topic-cell">{problem.topics.slice(0, 2).join(' · ')}</span><ArrowRight size={15} /></button>)}</div> : <div className="empty-problems"><div className="empty-icon"><BookOpen size={22} /></div><h3>No matching problems</h3><p>Try another search or clear the filters to see the full catalogue.</p><button className="button-secondary" onClick={() => setShowAuthNotice(true)}>How to add problems <ArrowRight size={14} /></button></div>}
             </div>
             <div className="footnote"><ShieldCheck size={15} /> Your practice list stays focused on the problems you choose.</div>
