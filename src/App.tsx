@@ -102,44 +102,32 @@ function App() {
   }
 
   const runCode = async () => {
-    const apiUrl = (import.meta.env.VITE_JUDGE0_API_URL as string | undefined)?.trim()
-    if (!apiUrl) {
-      setOutput('Java execution is not configured. Set VITE_JUDGE0_API_URL to your Judge0 /submissions endpoint. If your provider requires an API key, route requests through a server-side proxy; never put secret keys in VITE_ variables.')
-      setRunState('error')
-      return
-    }
     setIsRunning(true)
     setRunState('running')
     setOutput('Compiling and running Java 17…')
     try {
-      const baseUrl = apiUrl.replace(/\\/$/, '')
-      const submitUrl = baseUrl.includes('?') ? baseUrl : baseUrl + '?base64_encoded=false&wait=true'
-      const response = await fetch(submitUrl, {
+      const response = await fetch('/api/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          language_id: 62,
-          source_code: code,
-          stdin: '',
-          cpu_time_limit: 2,
-          wall_time_limit: 5,
-        }),
+        body: JSON.stringify({ source_code: code, stdin: '' }),
       })
-      if (!response.ok) throw new Error(`Execution request failed (${response.status}). Check your Judge0 endpoint, CORS settings, and provider limits.`)
-      let result = await response.json() as { token?: string; stdout?: string | null; stderr?: string | null; compile_output?: string | null; message?: string; status?: { id?: number; description?: string } }
-      if (result.token && (!result.status || result.status.id === undefined || result.status.id <= 2)) {
-        for (let attempt = 0; attempt < 15; attempt++) {
-          await new Promise((resolve) => window.setTimeout(resolve, 1000))
-          const pollResponse = await fetch(`${baseUrl}/${encodeURIComponent(result.token)}?base64_encoded=false`, { headers: { Accept: 'application/json' } })
-          if (!pollResponse.ok) throw new Error(`Could not retrieve execution result (${pollResponse.status}).`)
-          result = await pollResponse.json() as typeof result
-          if (result.status && result.status.id > 2) break
-        }
+      const result = await response.json() as {
+        stdout?: string | null
+        stderr?: string | null
+        compile_output?: string | null
+        message?: string | null
+        error?: string
+        detail?: string
+        status?: { id?: number; description?: string } | null
+        time?: string | null
+        memory?: number | null
       }
-      const outputText = result.stdout?.trimEnd()
+      if (!response.ok) throw new Error([result.error, result.detail].filter(Boolean).join(': ') || `Execution request failed (${response.status}).`)
       const details = result.stderr || result.compile_output || result.message
       const statusText = result.status?.description
-      setOutput([statusText, details, outputText].filter(Boolean).join('\\n\\n') || 'Execution completed with no output.')
+      const stdout = result.stdout?.trimEnd()
+      const metrics = [result.time ? `Time: ${result.time}s` : '', result.memory ? `Memory: ${result.memory} KB` : ''].filter(Boolean).join(' · ')
+      setOutput([statusText, details, stdout, metrics].filter(Boolean).join('\n\n') || 'Execution completed with no output.')
       setRunState(result.status && result.status.id !== 3 ? 'error' : details ? 'error' : 'done')
     } catch (error) {
       setOutput(error instanceof Error ? error.message : 'Could not run code.')
