@@ -38,11 +38,11 @@ The app uses optional configuration so the UI can be explored before Supabase is
 
 ## Java code execution
 
-The Monaco editor is included. Execution is **not ready for production until a trusted server-side endpoint is configured**. Set `VITE_JUDGE0_API_URL` to a Judge0-compatible endpoint that accepts submissions and returns execution results.
+The Monaco editor is included. Execution is **not ready for production until a trusted server-side endpoint is configured**. Deploy the app on Vercel (or another host that supports the `api/run.ts` serverless handler), then set the server-only `JUDGE0_API_URL` environment variable to your Judge0 `/submissions` endpoint. If required by your provider, set `JUDGE0_API_KEY` as a server-side secret. The browser calls `/api/run`; provider credentials are never sent to the browser.
 
 Important security notes:
-- Do not expose a Judge0 RapidAPI key or other private credential in browser code.
-- For a hosted Judge0 service requiring credentials, create a server-side proxy/API endpoint and store secrets on that server.
+- Keep `JUDGE0_API_KEY` server-side; do not use a `VITE_` prefix for secrets.
+- The included `api/run.ts` serverless endpoint forwards Java submissions to Judge0, applies time limits, and polls asynchronous results.
 - Configure execution time and memory limits and validate request sizes.
 - The Run button sends Java (Judge0 language ID 62) source code and polls token-based results when the provider responds asynchronously. The Submit button deliberately refuses to claim an accepted verdict while verified test cases are missing. The imported spreadsheet contains problem titles/topics, not complete statements or test cases.
 - Hidden tests and expected outputs must never be delivered to the frontend.
@@ -71,7 +71,7 @@ npm run build
 ## Not yet configured
 
 - Supabase project credentials and Google OAuth app
-- Server-side Judge0 endpoint / secret handling
+- Configure `JUDGE0_API_URL` and, if required, `JUDGE0_API_KEY` in the deployment environment and test the hosted `/api/run` endpoint
 - Server-side Submit evaluation and private test cases
 - User progress persistence and database RLS
 - Real user activity replacing placeholder dashboard samples
