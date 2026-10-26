@@ -2,6 +2,7 @@ export type Difficulty = 'Easy' | 'Medium' | 'Hard' | 'Unknown'
 
 export interface Problem {
   id: string
+  externalId?: string | null
   title: string
   difficulty: Difficulty
   topics: string[]
