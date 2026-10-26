@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import {
   Activity, ArrowDownUp, ArrowLeft, ArrowRight, Bell, BookOpen, Check,
-  ChevronDown, CircleHelp, Code2, Command, Flame, Gauge, Github, ListFilter,
+  ChevronDown, CircleHelp, Code2, Command, Flame, Gauge, ListFilter,
   LogOut, Menu, Play, Search, Settings2, ShieldCheck, Sparkles, Terminal,
   Trophy, X, Zap,
 } from 'lucide-react'
@@ -14,12 +14,8 @@ import type { Problem } from './types'
 type View = 'dashboard' | 'problems' | 'workspace' | 'progress'
 type RunState = 'idle' | 'running' | 'done' | 'error'
 
-const sampleActivity = [
-  { date: '2026-10-21', solved: 1 },
-  { date: '2026-10-22', solved: 2 },
-  { date: '2026-10-23', solved: 1 },
-  { date: '2026-10-25', solved: 1 },
-].filter((day) => day.date <= new Date().toLocaleDateString('en-CA'))
+// Temporary visual preview data only; it is not real user activity.
+const sampleActivity = [] as { date: string; solved: number }[]
 
 const starterCode = `class Solution {
     public int solve() {
