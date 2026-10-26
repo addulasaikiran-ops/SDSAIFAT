@@ -359,7 +359,8 @@ export default function App() {
             onBack={() => setView('problems')}
             hasPrevious={problems.findIndex((p) => p.id === selectedProblem.id) > 0}
             hasNext={problems.findIndex((p) => p.id === selectedProblem.id) < problems.length - 1}
-          ) : view === 'problems' ? (
+          />
+        ) : view === 'problems' ? (
           <section className="content-page">
             <div className="page-heading"><div><div className="eyebrow">BUILD YOUR FOUNDATION</div><h1>Problem set<span>.</span></h1><p>A deliberate set of problems, one good solution at a time.</p></div><div className="heading-stamp"><Code2 size={16} /> JAVA TRACK</div></div>
             <div className="problem-summary-row"><div className="mini-stat"><span>Total problems</span><b>{problems.length}</b></div><div className="mini-stat"><span>In progress</span><b>{inProgressCount}</b></div><div className="mini-stat"><span>Completion</span><b>{completionPercent}%</b></div></div>
