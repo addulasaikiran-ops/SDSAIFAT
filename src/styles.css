@@ -346,3 +346,17 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   .editor-save-status { font-size: 9px; }
   .problem-number { margin-right: 5px; }
 }
+
+
+/* Per-problem standard input */
+.stdin-panel { flex: 0 0 auto; padding: 9px 12px 10px; border-top: 1px solid #303137; background: #151619; }
+.stdin-panel label { display: flex; align-items: center; gap: 9px; margin-bottom: 7px; }
+.stdin-panel label span { color: #c5c6cc; font-size: 10px; font-weight: 600; }
+.stdin-panel label small { color: #737680; font-size: 9px; }
+.stdin-panel textarea { display: block; width: 100%; min-height: 42px; max-height: 90px; resize: vertical; padding: 8px 9px; color: #d7d8df; background: #101113; border: 1px solid #303138; border-radius: 5px; outline: none; font: 10px/1.6 var(--mono); }
+.stdin-panel textarea::placeholder { color: #666873; }
+.stdin-panel textarea:focus { border-color: #718b49; box-shadow: 0 0 0 1px #718b4933; }
+@media (max-width: 720px) {
+  .stdin-panel { padding: 8px 9px; }
+  .stdin-panel textarea { min-height: 38px; }
+}
