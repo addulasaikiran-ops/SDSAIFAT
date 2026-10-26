@@ -6,7 +6,7 @@ import {
   CircleHelp, Clock3, Code2, FileCode2, Lightbulb, Play, RotateCcw, Send,
   Terminal, X,
 } from 'lucide-react'
-import type { CatalogueProblem } from '../types'
+import type { CatalogueProblem, Problem } from '../types'
 import './WorkspacePage.css'
 
 type RunState = 'idle' | 'running' | 'done' | 'error'
@@ -14,7 +14,7 @@ type LeftTab = 'description' | 'hints' | 'submissions'
 type DrawerTab = 'testcase' | 'result'
 
 type WorkspacePageProps = {
-  problem: CatalogueProblem
+  problem: Problem | CatalogueProblem
   code: string
   stdin: string
   output: string
