@@ -6,17 +6,19 @@ const slug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, '-').
 
 export const problems: Problem[] = rows.map(([id, title, topic, sheetOrder]) => ({
   id: String(sheetOrder),
+  externalId: id === 'Warm-up' ? null : id,
   title,
   difficulty: 'Unknown',
   topics: [topic],
   statement: 'The full problem statement is not included in the supplied spreadsheet. Open the original problem link below for the official description, examples, and constraints.',
   examples: [],
   constraints: [],
-  starterCode: `class Solution {
-    public void solve() {
-        // Write your solution here
+  starterCode: `public class Main {
+    public static void main(String[] args) {
+        // Write your Java code here
+        System.out.println("Hello, SDSAIFAT!");
     }
-`,
+}`,
   testCases: [],
   externalUrl: id === 'Warm-up' ? null : 'https://leetcode.com/problems/' + slug(title) + '/',
   status: 'Not Started',
