@@ -8,8 +8,9 @@ A React + TypeScript coding-practice application with a hybrid dashboard and foc
 - Problem list and problem workspace UI
 - Monaco Java editor
 - Google OAuth integration path using Supabase Auth
+- Imported 350-row problem catalogue from the supplied spreadsheet
+- Judge0 submission and result polling for the Run button
 - Streak calculation helpers (local calendar dates)
-- Empty problem catalogue, intentionally waiting for the supplied problem list
 
 ## Run locally
 
@@ -43,12 +44,12 @@ Important security notes:
 - Do not expose a Judge0 RapidAPI key or other private credential in browser code.
 - For a hosted Judge0 service requiring credentials, create a server-side proxy/API endpoint and store secrets on that server.
 - Configure execution time and memory limits and validate request sizes.
-- The current Run button sends Java (Judge0 language ID 62) source code and displays the returned output/error. The current Submit button is a placeholder until a server-side test evaluator is wired in.
+- The Run button sends Java (Judge0 language ID 62) source code and polls token-based results when the provider responds asynchronously. The Submit button deliberately refuses to claim an accepted verdict while verified test cases are missing. The imported spreadsheet contains problem titles/topics, not complete statements or test cases.
 - Hidden tests and expected outputs must never be delivered to the frontend.
 
 ## Problem catalogue
 
-Problem data lives in `src/data/problems.ts`. It is intentionally empty. Once the problem list is supplied, add only those problems and their statements, starter code, test cases, and difficulty/tags.
+Problem data lives in `src/data/problems.ts`; it currently includes the 350 spreadsheet rows in sheet order with topic tags and original LeetCode links generated from problem titles. Since the spreadsheet does not supply full statements, difficulty, examples, constraints, or verified test cases, these fields are not fabricated. The current generic Java starter template is only a placeholder, not a problem-specific method signature.
 
 ## Streak / activity integration
 
@@ -74,4 +75,4 @@ npm run build
 - Server-side Submit evaluation and private test cases
 - User progress persistence and database RLS
 - Real user activity replacing placeholder dashboard samples
-- Your supplied problem list
+- Full official statements, difficulty metadata, problem-specific Java starter signatures, and reviewed test cases
