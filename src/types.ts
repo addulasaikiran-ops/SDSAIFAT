@@ -1,59 +1,91 @@
 export type Difficulty = 'Easy' | 'Medium' | 'Hard'
 
-/**
- * The imported spreadsheet currently has unverified difficulty labels.
- * Keep this compatibility type while individual problem JSON files are added;
- * curated problem content itself should use the Difficulty union above.
- */
-export type CatalogueDifficulty = Difficulty | 'Unknown'
+export type StdinFormat = 'line-based' | 'tokenized' | 'json' | 'custom'
 
+/** One visible sample, shown in the problem statement and testcase drawer. */
 export interface ProblemExample {
   input: string
   output: string
-  explanation?: string
+  explanation: string
 }
 
+/** A case consumed by the Java driver. Client-side cases are not secret. */
 export interface ProblemTestCase {
   input: string
   expectedOutput: string
-  /**
-   * This flag is useful for curated content schemas. Hidden cases must remain
-   * in Worker-side storage and must never be serialized into browser responses.
-   */
-  hidden?: boolean
+  hidden: boolean
 }
 
+/** Describes the method contract and how raw stdin is converted to arguments. */
+export interface ProblemDriverConfig {
+  methodName: string
+  /** Java type names in method-parameter order, e.g. ['int[]', 'int']. */
+  parameterTypes: string[]
+  /** Java return type, e.g. 'int[]', 'boolean', or 'void'. */
+  returnType: string
+  stdinFormat: StdinFormat
+  /** Explicit instructions/schema used by the driver to parse stdin. */
+  stdinParsing: string
+}
+
+/**
+ * Canonical, fully curated problem definition loaded on demand from
+ * src/data/problems/<slug>.json.
+ */
 export interface Problem {
-  /** Stable internal ID used by local progress and saved drafts. */
+  /** Stable catalogue/progress key. */
   id: string
-  /** Stable URL-safe identifier for /problems/:slug. */
-  slug?: string
-  externalId?: string | null
+  slug: string
   title: string
-  /** Use Difficulty for reviewed content; Unknown is temporary legacy catalogue data. */
-  difficulty: CatalogueDifficulty
+  difficulty: Difficulty
   topics: string[]
-  acceptance?: string
-  /** Original problem statement written for SDSAIFAT, in Markdown. */
+  patterns: string[]
+  /** Markdown source; render with a Markdown renderer in the UI. */
   statement: string
   examples: ProblemExample[]
   constraints: string[]
-  /** Three progressive hints for curated problems. */
-  hints?: [string, string, string] | string[]
-  /** Java class body / solution method starter; legacy rows are migrated in batches. */
+  /** Exactly three hints, ordered from a gentle nudge to a near-solution. */
+  hints: [string, string, string]
+  /** Java starter source; should declare class Solution and the required method. */
   starterCode: string
+  driver: ProblemDriverConfig
   testCases: ProblemTestCase[]
-  /** Suggested complexity descriptions shown in the Solution tab. */
+  timeComplexity: string
+  spaceComplexity: string
+  solutionApproach: string
+  relatedSlugs: string[]
+  externalUrl: string | null
+  /** Optional source-platform identifier, e.g. a LeetCode problem number. */
+  externalId?: string | null
+}
+
+/**
+ * Lightweight catalogue entry used to render/search the 350-row index without
+ * importing full problem statements, hints, starter code, or test cases.
+ *
+ * This compatibility type is intentionally separate from canonical Problem.
+ * Migrate each catalogue row to src/data/problems/<slug>.json as it is curated.
+ */
+export interface CatalogueProblem {
+  id: string
+  slug: string
+  externalId?: string | null
+  title: string
+  difficulty: Difficulty | 'Unknown'
+  topics: string[]
+  acceptance?: string
+  statement: string
+  examples: Array<{ input: string; output: string; explanation?: string }>
+  constraints: string[]
+  hints?: [string, string, string] | string[]
+  starterCode: string
+  testCases: Array<{ input: string; expectedOutput: string; hidden?: boolean }>
   timeComplexity?: string
   spaceComplexity?: string
   patterns?: string[]
-  /** LeetCode official problem URL when an original exists. */
   externalUrl?: string | null
-  /** Java method used by the Worker wrapper to call the user's Solution class. */
   methodName?: string
-  /** Ordered Java parameter types passed by the Worker driver. */
   paramTypes?: string[]
-  /** Result formatting contract understood by the Worker Java driver. */
   outputMode?: string
   status?: 'Not Started' | 'In Progress' | 'Solved'
   sheetOrder?: number
@@ -71,7 +103,7 @@ export interface UserProgress {
   longestStreak: number
 }
 
-/** Local-only history item; accepted results are written only after Worker judging. */
+/** Local-only history item; accepted results should only follow server-side judging. */
 export interface SubmissionRecord {
   id: string
   problemId: string

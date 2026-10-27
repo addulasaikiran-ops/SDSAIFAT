@@ -1,0 +1,80 @@
+{
+  "id": "two-sum",
+  "slug": "two-sum",
+  "title": "Two Sum",
+  "difficulty": "Easy",
+  "topics": [
+    "Arrays",
+    "Hash Table"
+  ],
+  "patterns": [
+    "Hash Map",
+    "Complement Lookup"
+  ],
+  "statement": "Given an integer array `nums` and an integer `target`, return the indices of the two numbers such that they add up to `target`. You may assume each input has exactly one solution, and you may not use the same element twice. Return the indices in any order.",
+  "examples": [
+    {
+      "input": "nums = [2,7,11,15]\\ntarget = 9",
+      "output": "[0,1]",
+      "explanation": "`nums[0] + nums[1] = 2 + 7 = 9`, so the answer is `[0, 1]`."
+    },
+    {
+      "input": "nums = [3,2,4]\\ntarget = 6",
+      "output": "[1,2]",
+      "explanation": "The values `2` and `4` add up to `6`."
+    },
+    {
+      "input": "nums = [3,3]\\ntarget = 6",
+      "output": "[0,1]",
+      "explanation": "The two equal values are at different indices."
+    }
+  ],
+  "constraints": [
+    "2 <= nums.length <= 10^4",
+    "-10^9 <= nums[i] <= 10^9",
+    "-10^9 <= target <= 10^9",
+    "Exactly one valid answer exists."
+  ],
+  "hints": [
+    "For each value, ask what number would complete the target sum.",
+    "Store values you have already seen in a hash map from value to index.",
+    "For each `nums[i]`, look up `target - nums[i]` before inserting the current value; this avoids reusing the same element."
+  ],
+  "starterCode": "import java.util.*;\\n\\nclass Solution {\\n    public int[] twoSum(int[] nums, int target) {\\n        // TODO: return the indices of the two values that add up to target\\n        return new int[0];\\n    }\\n}",
+  "driver": {
+    "methodName": "twoSum",
+    "parameterTypes": [
+      "int[]",
+      "int"
+    ],
+    "returnType": "int[]",
+    "stdinFormat": "line-based",
+    "stdinParsing": "Read line 1 as a JSON-style integer array, for example [2,7,11,15]. Read line 2 as the integer target. The driver parses these values and calls Solution.twoSum(nums, target)."
+  },
+  "testCases": [
+    {
+      "input": "[2,7,11,15]\\n9",
+      "expectedOutput": "[0, 1]",
+      "hidden": false
+    },
+    {
+      "input": "[3,2,4]\\n6",
+      "expectedOutput": "[1, 2]",
+      "hidden": false
+    },
+    {
+      "input": "[3,3]\\n6",
+      "expectedOutput": "[0, 1]",
+      "hidden": false
+    }
+  ],
+  "timeComplexity": "O(n)",
+  "spaceComplexity": "O(n)",
+  "solutionApproach": "Scan the array once while storing each previously seen value and its index. For each current value, check whether its complement (target minus the current value) is already in the map; if so, return the saved index and current index.",
+  "relatedSlugs": [
+    "contains-duplicate",
+    "two-sum-ii-input-array-is-sorted"
+  ],
+  "externalUrl": "https://leetcode.com/problems/two-sum/",
+  "externalId": "1"
+}

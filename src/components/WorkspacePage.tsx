@@ -6,7 +6,7 @@ import {
   CircleHelp, Clock3, Code2, FileCode2, Lightbulb, Play, RotateCcw, Send,
   Terminal, X,
 } from 'lucide-react'
-import type { Problem } from '../types'
+import type { CatalogueProblem, Problem } from '../types'
 import './WorkspacePage.css'
 
 type RunState = 'idle' | 'running' | 'done' | 'error'
@@ -14,13 +14,13 @@ type LeftTab = 'description' | 'hints' | 'submissions'
 type DrawerTab = 'testcase' | 'result'
 
 type WorkspacePageProps = {
-  problem: Problem
+  problem: Problem | CatalogueProblem
   code: string
   stdin: string
   output: string
   runState: RunState
   isRunning: boolean
-  status: NonNullable<Problem['status']>
+  status: NonNullable<CatalogueProblem['status']>
   onCodeChange: (value: string) => void
   onStdinChange: (value: string) => void
   onRun: () => void | Promise<void>

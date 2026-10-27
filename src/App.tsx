@@ -1,17 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Activity, ArrowDownUp, ArrowRight, BookOpen, Check, ChevronDown, CircleHelp, Code2, Command, Flame, Gauge, ListFilter, LogOut, Menu, Search, Settings2, ShieldCheck, Sparkles, Trophy, X, Zap
 } from 'lucide-react'
 import { problems } from './data/problems'
+import { loadProblem } from './data/problemLoader'
 import WorkspacePage from './components/WorkspacePage'
 import { buildActivityGrid, calculateStreaks } from './lib/streak'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
-import type { ActivityDay, Problem } from './types'
+import type { ActivityDay, CatalogueProblem, Problem } from './types'
 
 type View = 'dashboard' | 'problems' | 'workspace' | 'progress'
 type RunState = 'idle' | 'running' | 'done' | 'error'
 
-type PracticeStatus = NonNullable<Problem['status']>
+type PracticeStatus = NonNullable<CatalogueProblem['status']>
 type SavedPracticeState = {
   statuses: Record<string, PracticeStatus>
   drafts: Record<string, string>
@@ -67,7 +68,8 @@ const starterCode = 'public class Main {\n    public static void main(String[] a
 
 export default function App() {
   const [view, setView] = useState<View>('dashboard')
-  const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null)
+  const [selectedProblem, setSelectedProblem] = useState<Problem | CatalogueProblem | null>(null)
+  const problemLoadToken = useRef(0)
   const [searchQuery, setSearchQuery] = useState('')
   const [difficulty, setDifficulty] = useState('All')
   const [topicFilter, setTopicFilter] = useState('All')
@@ -151,12 +153,35 @@ export default function App() {
     setUser(null)
   }
 
-  const openProblem = (problem: Problem) => {
+  const openProblem = (problem: CatalogueProblem) => {
+    const token = ++problemLoadToken.current
+    const savedDraft = practiceState.drafts[problem.id]
     setSelectedProblem(problem)
-    setCode(practiceState.drafts[problem.id] ?? problem.starterCode)
+    setCode(savedDraft ?? problem.starterCode)
     setStdin(practiceState.stdinByProblem[problem.id] ?? '')
     setOutput('')
+    setRunState('idle')
     setView('workspace')
+
+    // Full statements, hints, driver configuration, and test cases are fetched
+    // only for the selected slug. Uncurated catalogue rows keep their fallback.
+    void loadProblem(problem.slug).then((curatedProblem) => {
+      if (token !== problemLoadToken.current) return
+      const selectedData: Problem = {
+        ...curatedProblem,
+        // Keep the catalogue row's ID so saved drafts/progress remain stable
+        // even when the same canonical question appears in multiple sections.
+        id: problem.id,
+        externalId: problem.externalId ?? curatedProblem.externalId,
+      }
+      setSelectedProblem(selectedData)
+      setCode((currentCode) => currentCode === (savedDraft ?? problem.starterCode)
+        ? (savedDraft ?? selectedData.starterCode)
+        : currentCode)
+    }).catch(() => {
+      // A catalogue entry without a curated JSON file remains usable with its
+      // lightweight fallback statement and starter until its content is added.
+    })
   }
 
   const handleStdinChange = (value: string) => {
@@ -182,7 +207,7 @@ export default function App() {
     })
   }
 
-  const markProblemSolved = (problem: Problem) => {
+  const markProblemSolved = (problem: Problem | CatalogueProblem) => {
     setPracticeState((previous) => {
       if (previous.statuses[problem.id] === 'Solved') return previous
       const today = localDateKey()
